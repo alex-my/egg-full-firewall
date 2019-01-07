@@ -1,13 +1,3 @@
-## 依赖
-
-> lodash, fast-json-stringify, uglify-es
-
-## 安装
-
-```bash
-$ npm i egg-full-count egg-redis --save
-```
-
 ## 说明
 
 - 插件会对`ip`和理由请求按照配置的规则进行判断，不符合的跳转到`ipRedirectUrl | requestRedirectUrl`，或者显示`ipCode, ipMessage`或者`requestCode, requestMessage`
@@ -17,6 +7,16 @@ $ npm i egg-full-count egg-redis --save
   - 规则 2: 80 秒内同一个 ip 访问 40 次，则禁止访问 400 秒
   - 在`ipRule`中，使用`Array.some`方法来依次判断，假设规则 1 符合，则禁止访问 300 秒，不会再判断规则 2
 - 在您的应用中必须安装`egg-redis`，配置见下方
+
+## 依赖
+
+> lodash, fast-json-stringify, uglify-es
+
+## 安装
+
+```bash
+$ npm i egg-full-count egg-redis --save
+```
 
 ## 使用
 
