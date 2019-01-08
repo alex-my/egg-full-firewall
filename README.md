@@ -80,7 +80,7 @@ exports.fullFirewall = {
 
   // 是否检测路由请求
   useRequest: true,
-  // 路由请求 检测规则, url(s) 请求的路由(们), method 方法,interval 时间间隔(秒), count 间隔内允许的次数, expire 封禁时间(秒)
+  // 路由请求 检测规则, urls 请求的路由集合, method 方法,interval 时间间隔(秒), count 间隔内允许的次数, expire 封禁时间(秒)
   requestRule: [
     // 示例: 60秒内用 GET 访问 / 或者 /404 3次以上会被封禁300秒
     {
