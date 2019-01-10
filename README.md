@@ -8,6 +8,10 @@
   - 在`ipRule`中，使用`Array.some`方法来依次判断，假设规则 1 符合，则禁止访问 300 秒，不会再判断规则 2
 - 在您的应用中必须安装`egg-redis`，配置见下方
 
+## 版本更新
+
+- [CHANGELOG](./CHANGELOG.md)
+
 ## 依赖
 
 > lodash, fast-json-stringify, uglify-es

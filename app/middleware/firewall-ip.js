@@ -2,9 +2,11 @@
 
 const _ = require('lodash');
 const fastJson = require('fast-json-stringify');
+const Logger = require('../../lib/logger');
 
 module.exports = (options, app) => {
   const {
+    logEnable,
     useIP,
     ipRule,
     ipRedirectUrl,
@@ -17,6 +19,7 @@ module.exports = (options, app) => {
     ipIgnoreRequest,
   } = app.config.fullFirewall;
   const redis = ipRedisName ? app.redis.get(ipRedisName) : app.redis;
+  const logger = new Logger(app.coreLogger, logEnable, 'firewallIP');
 
   // 查找最大的 interval 做为缓存有效时间
   let cacheExpire = 0;
@@ -48,6 +51,7 @@ module.exports = (options, app) => {
   const checkIP = async (ip, method, path) => {
     // 被禁止
     if (ipDisabled.some(val => val === ip)) {
+      logger.log(`ip: ${ip} in the forbidden list`);
       return false;
     }
     // 未设置规则
@@ -56,6 +60,7 @@ module.exports = (options, app) => {
     }
     // 忽略
     if (ipIgnore.some(val => val === ip)) {
+      logger.log(`ip: ${ip} in the ignore list`);
       return true;
     }
     // 某些路由不受 IP 判断
@@ -77,6 +82,7 @@ module.exports = (options, app) => {
       return false;
     })
     if (ignoreRequestResult) {
+      logger.log(`path: ${path} in the ignore list`);
       return true;
     };
 
@@ -95,6 +101,7 @@ module.exports = (options, app) => {
     if (info) {
       // 是否在封禁时间内
       if (info.disable_t > t) {
+        logger.log(`ip: ${ip} is currently in the limit period`);
         return false;
       }
 
@@ -109,6 +116,7 @@ module.exports = (options, app) => {
               count: 0,
               disable_t: t + rule.expire,
             }), 'EX', cacheExpire);
+            logger.log(`ip: ${ip} violation of rule ${JSON.stringify(rule)}`);
             return true;
           }
         }
@@ -143,10 +151,12 @@ module.exports = (options, app) => {
       const result = await checkIP(ctx.ip, ctx.request.method, ctx.path);
       if (!result) {
         if (ipRedirectUrl) {
+          logger.log(`ip limit, redirect to ${ipRedirectUrl}`);
           await ctx.redirect(ipRedirectUrl);
         } else {
           ctx.status = ipCode;
           ctx.body = ipMessage;
+          logger.log(`ip limit, status: ${ipCode}, body: ${JSON.stringify(ipMessage)}`);
         }
         return;
       }

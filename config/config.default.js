@@ -1,6 +1,8 @@
 'use strict';
 
 exports.fullFirewall = {
+    // 是否开启日志，日志位于 logs/你的项目名称/egg-web.log
+    logEnable: true,
     // 是否检测IP
     useIP: true,
     // IP 检测规则, interval 时间间隔(秒), count 间隔内允许的次数, expire 封禁时间(秒)

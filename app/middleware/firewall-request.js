@@ -2,9 +2,11 @@
 
 const _ = require('lodash');
 const fastJson = require('fast-json-stringify');
+const Logger = require('../../lib/logger');
 
 module.exports = (options, app) => {
   const {
+    logEnable,
     useRequest,
     requestRule,
     requestRedirectUrl,
@@ -15,6 +17,7 @@ module.exports = (options, app) => {
     requestRedisPrefix,
   } = app.config.fullFirewall;
   const redis = requestName ? app.redis.get(requestName) : app.redis;
+  const logger = new Logger(app.coreLogger, logEnable, 'firewallRequest');
 
   // 查找最大的 interval 做为缓存有效时间
   let cacheExpire = 0;
@@ -58,6 +61,7 @@ module.exports = (options, app) => {
     }
     // 忽略
     if (requestIgnoreIP.some(val => val === ip)) {
+      logger.log(`ip: ${ip} in the ignore list`);
       return true;
     }
 
@@ -76,6 +80,7 @@ module.exports = (options, app) => {
     if (info) {
       // 是否在封禁时间内
       if (info.disable_t > t) {
+        logger.log(`request: ${method} ${path} is currently in the limit period`);
         return false;
       }
 
@@ -93,6 +98,7 @@ module.exports = (options, app) => {
                   count: 0,
                   disable_t: t + rule.expire,
                 }), 'EX', cacheExpire);
+                logger.log(`request: ${method} ${path} violation of rule ${JSON.stringify(rule)}`);
                 return true;
               }
             }
@@ -129,10 +135,12 @@ module.exports = (options, app) => {
       const result = await checkRequest(ctx.ip, ctx.request.method, ctx.path);
       if (!result) {
         if (requestRedirectUrl) {
+          logger.log(`request limit, redirect to ${requestRedirectUrl}`);
           await ctx.redirect(requestRedirectUrl);
         } else {
           ctx.status = requestCode;
           ctx.body = requestMessage;
+          logger.log(`request limit, status: ${ipCode}, body: ${JSON.stringify(ipMessage)}`);
         }
         return;
       }
