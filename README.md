@@ -19,7 +19,7 @@
 ## 安装
 
 ```bash
-$ npm i egg-full-count egg-redis --save
+$ npm i egg-full-firewall egg-redis --save
 ```
 
 ## 使用
@@ -28,7 +28,7 @@ $ npm i egg-full-count egg-redis --save
 // config/plugin.js
 exports.fullFirewall = {
   enable: true,
-  package: 'egg-full-count',
+  package: 'egg-full-firewall',
 };
 
 exports.redis = {
