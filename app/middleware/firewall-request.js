@@ -140,7 +140,7 @@ module.exports = (options, app) => {
         } else {
           ctx.status = requestCode;
           ctx.body = requestMessage;
-          logger.log(`request limit, status: ${ipCode}, body: ${JSON.stringify(ipMessage)}`);
+          logger.log(`request limit, status: ${requestCode}, body: ${JSON.stringify(requestMessage)}`);
         }
         return;
       }
