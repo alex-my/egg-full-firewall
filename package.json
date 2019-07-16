@@ -50,12 +50,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/eggjs/egg-full-firewall.git"
+    "url": "git+https://github.com/alex-my/egg-full-firewall"
   },
   "bugs": {
-    "url": "https://github.com/eggjs/egg/issues"
+    "url": "https://github.com/alex-my/egg-full-firewall/issues"
   },
-  "homepage": "https://github.com/eggjs/egg-full-firewall#readme",
+  "homepage": "https://github.com/alex-my/egg-full-firewall",
   "author": "",
   "license": "MIT"
 }
