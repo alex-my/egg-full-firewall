@@ -37,17 +37,17 @@ module.exports = (options, app) => {
     type: 'object',
     properties: {
       pret_t: {
-        type: 'integer'
+        type: 'integer',
       },
       count: {
-        type: 'integer'
+        type: 'integer',
       },
       disable_t: {
-        type: 'integer'
+        type: 'integer',
       },
-    }
+    },
   }, {
-    uglify: true
+    uglify: true,
   });
 
   const checkRequest = async (ip, method, path) => {
@@ -61,11 +61,13 @@ module.exports = (options, app) => {
     }
     // 忽略
     if (requestIgnoreIP.some(val => val === ip)) {
-      logger.log(`ip: ${ip} in the ignore list`);
+      logger.info(`ip: ${ip} in the ignore list`);
       return true;
     }
 
-    const cacheKey = `${requestRedisPrefix}:${ip}:${method}:${encodeURIComponent(path)}`;
+    const cacheKey = `${requestRedisPrefix}:${ip}:${method}:${encodeURIComponent(
+      path
+    )}`;
     const cacheValue = await redis.get(cacheKey);
     const info = JSON.parse(cacheValue);
     /**
@@ -80,7 +82,9 @@ module.exports = (options, app) => {
     if (info) {
       // 是否在封禁时间内
       if (info.disable_t > t) {
-        logger.log(`request: ${method} ${path} is currently in the limit period`);
+        logger.info(
+          `request: ${method} ${path} is currently in the limit period`
+        );
         return false;
       }
 
@@ -93,12 +97,21 @@ module.exports = (options, app) => {
             if (t - info.pret_t < rule.interval) {
               if (info.count > rule.count) {
                 // 违反了本规则
-                redis.set(cacheKey, stringify({
-                  pret_t: t,
-                  count: 0,
-                  disable_t: t + rule.expire,
-                }), 'EX', cacheExpire);
-                logger.log(`request: ${method} ${path} violation of rule ${JSON.stringify(rule)}`);
+                redis.set(
+                  cacheKey,
+                  stringify({
+                    pret_t: t,
+                    count: 0,
+                    disable_t: t + rule.expire,
+                  }),
+                  'EX',
+                  cacheExpire
+                );
+                logger.info(
+                  `request: ${method} ${path} violation of rule ${JSON.stringify(
+                    rule
+                  )}, t: ${t}, info: ${JSON.stringify(info)}`
+                );
                 return true;
               }
             }
@@ -112,19 +125,34 @@ module.exports = (options, app) => {
         return false;
       }
       // 没有违反规则，则记录本次访问
-      redis.set(cacheKey, stringify({
-        pret_t: t,
-        count: info.count,
-        disable_t: 0,
-      }), 'EX', cacheExpire);
+      redis.set(
+        cacheKey,
+        stringify({
+          pret_t: info.pret_t,
+          count: info.count,
+          disable_t: 0,
+        }),
+        'EX',
+        cacheExpire
+      );
 
+      logger.debug(
+        `update record, key: ${cacheKey}, pre_t: ${info.pret_t}, count: ${info.count}`
+      );
     } else {
       // 没有任何记录，创建一个记录存储
-      redis.set(cacheKey, stringify({
-        pret_t: t,
-        count: 1,
-        disable_t: 0,
-      }), 'EX', cacheExpire);
+      redis.set(
+        cacheKey,
+        stringify({
+          pret_t: t,
+          count: 1,
+          disable_t: 0,
+        }),
+        'EX',
+        cacheExpire
+      );
+
+      logger.debug(`new record, key: ${cacheKey}, pre_t: ${t}, count: 1`);
     }
 
     return true;
@@ -135,12 +163,16 @@ module.exports = (options, app) => {
       const result = await checkRequest(ctx.ip, ctx.request.method, ctx.path);
       if (!result) {
         if (requestRedirectUrl) {
-          logger.log(`request limit, redirect to ${requestRedirectUrl}`);
+          logger.info(`request limit, redirect to ${requestRedirectUrl}`);
           await ctx.redirect(requestRedirectUrl);
         } else {
           ctx.status = requestCode;
           ctx.body = requestMessage;
-          logger.log(`request limit, status: ${requestCode}, body: ${JSON.stringify(requestMessage)}`);
+          logger.info(
+            `request limit, status: ${requestCode}, body: ${JSON.stringify(
+              requestMessage
+            )}`
+          );
         }
         return;
       }

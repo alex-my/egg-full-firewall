@@ -1,6 +1,6 @@
 {
   "name": "egg-full-firewall",
-  "version": "1.4.4",
+  "version": "1.5.4",
   "description": "egg插件，防止IP或者某些请求过于频繁",
   "eggPlugin": {
     "name": "fullFirewall"

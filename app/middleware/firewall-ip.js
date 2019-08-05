@@ -35,23 +35,23 @@ module.exports = (options, app) => {
     type: 'object',
     properties: {
       pret_t: {
-        type: 'integer'
+        type: 'integer',
       },
       count: {
-        type: 'integer'
+        type: 'integer',
       },
       disable_t: {
-        type: 'integer'
+        type: 'integer',
       },
-    }
+    },
   }, {
-    uglify: true
+    uglify: true,
   });
 
   const checkIP = async (ip, method, path) => {
     // 被禁止
     if (ipDisabled.some(val => val === ip)) {
-      logger.log(`ip: ${ip} in the forbidden list`);
+      logger.info(`ip: ${ip} in the forbidden list`);
       return false;
     }
     // 未设置规则
@@ -60,7 +60,7 @@ module.exports = (options, app) => {
     }
     // 忽略
     if (ipIgnore.some(val => val === ip)) {
-      logger.log(`ip: ${ip} in the ignore list`);
+      logger.info(`ip: ${ip} in the ignore list`);
       return true;
     }
     // 某些路由不受 IP 判断
@@ -69,7 +69,7 @@ module.exports = (options, app) => {
         return false;
       }
       const {
-        url
+        url,
       } = rule;
       if (url.charAt(url.length - 1) === '*') {
         const checkUrl = url.slice(0, url.length - 1);
@@ -80,11 +80,11 @@ module.exports = (options, app) => {
         return true;
       }
       return false;
-    })
+    });
     if (ignoreRequestResult) {
-      logger.log(`path: ${path} in the ignore list`);
+      logger.info(`path: ${path} in the ignore list`);
       return true;
-    };
+    }
 
     const cacheKey = `${ipRedisPrefix}:${ip}`;
     const cacheValue = await redis.get(cacheKey);
@@ -101,7 +101,7 @@ module.exports = (options, app) => {
     if (info) {
       // 是否在封禁时间内
       if (info.disable_t > t) {
-        logger.log(`ip: ${ip} is currently in the limit period`);
+        logger.info(`ip: ${ip} is currently in the limit period`);
         return false;
       }
 
@@ -116,7 +116,7 @@ module.exports = (options, app) => {
               count: 0,
               disable_t: t + rule.expire,
             }), 'EX', cacheExpire);
-            logger.log(`ip: ${ip} violation of rule ${JSON.stringify(rule)}`);
+            logger.info(`ip: ${ip} violation of rule: ${JSON.stringify(rule)}, t: ${t}, info: ${JSON.stringify(info)}`);
             return true;
           }
         }
@@ -129,11 +129,12 @@ module.exports = (options, app) => {
       }
       // 没有违反规则，则记录本次访问
       redis.set(cacheKey, stringify({
-        pret_t: t,
+        pret_t: info.pret_t,
         count: info.count,
         disable_t: 0,
       }), 'EX', cacheExpire);
 
+      logger.debug(`update record, key: ${cacheKey}, pre_t: ${info.pret_t}, count: ${info.count}`);
     } else {
       // 没有任何记录，创建一个记录存储
       redis.set(cacheKey, stringify({
@@ -141,6 +142,8 @@ module.exports = (options, app) => {
         count: 1,
         disable_t: 0,
       }), 'EX', cacheExpire);
+
+      logger.debug(`new record, key: ${cacheKey}, pre_t: ${t}, count: 1`);
     }
 
     return true;
@@ -151,12 +154,12 @@ module.exports = (options, app) => {
       const result = await checkIP(ctx.ip, ctx.request.method, ctx.path);
       if (!result) {
         if (ipRedirectUrl) {
-          logger.log(`ip limit, redirect to ${ipRedirectUrl}`);
+          logger.info(`ip limit, redirect to ${ipRedirectUrl}`);
           await ctx.redirect(ipRedirectUrl);
         } else {
           ctx.status = ipCode;
           ctx.body = ipMessage;
-          logger.log(`ip limit, status: ${ipCode}, body: ${JSON.stringify(ipMessage)}`);
+          logger.info(`ip limit, status: ${ipCode}, body: ${JSON.stringify(ipMessage)}`);
         }
         return;
       }
