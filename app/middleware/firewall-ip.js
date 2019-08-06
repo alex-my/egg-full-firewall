@@ -29,24 +29,66 @@ module.exports = (options, app) => {
     }
   });
 
-  // 预定义 JSON 转换结构
-  // const stringify = fastJson({
-  //   title: 'Firewall IP Info',
-  //   type: 'object',
-  //   properties: {
-  //     pret_t: {
-  //       type: 'integer',
-  //     },
-  //     count: {
-  //       type: 'integer',
-  //     },
-  //     disable_t: {
-  //       type: 'integer',
-  //     },
-  //   },
-  // }, {
-  //   uglify: true,
-  // });
+  // 预定义 JSON 转换结构，加快 JSON 压缩
+  const schema = {
+    title: 'Item Rule',
+    type: 'object',
+    properties: {
+      pret_t: {
+        type: 'integer',
+      },
+      count: {
+        type: 'integer',
+      },
+      disable_t: {
+        type: 'integer',
+      },
+    },
+  };
+
+  const stringify = fastJson({
+    title: 'Firewall IP Rules',
+    type: 'array',
+    items: schema,
+  }, {
+    uglify: true,
+  });
+
+  const stringifyRule = fastJson({
+    title: 'Firewall IP Rule',
+    type: 'object',
+    properties: {
+      pret_t: {
+        type: 'integer',
+      },
+      count: {
+        type: 'integer',
+      },
+      disable_t: {
+        type: 'integer',
+      },
+    },
+  }, {
+    uglify: true,
+  });
+
+  const stringifyDefinedRule = fastJson({
+    title: 'Firewall IP Defined Rule',
+    type: 'object',
+    properties: {
+      interval: {
+        type: 'integer',
+      },
+      count: {
+        type: 'integer',
+      },
+      expire: {
+        type: 'integer',
+      },
+    },
+  }, {
+    uglify: true,
+  });
 
   const checkIP = async (ip, method, path) => {
     // 被禁止
@@ -116,7 +158,6 @@ module.exports = (options, app) => {
       let isLimit = false;
       _.forEach(rules, (rule, index) => {
         const definedRule = ipRule[index];
-        // logger.debug(`rule: ${JSON.stringify(rule)}, index: ${index}, definedRule: ${JSON.stringify(definedRule)}`);
 
         rule.count += 1;
         if (t - rule.pret_t < definedRule.interval) {
@@ -124,7 +165,7 @@ module.exports = (options, app) => {
             // 违反了规则
             rule.disable_t = t + definedRule.expire;
             isLimit = true;
-            logger.info(`ip: ${ip} violation of rule: ${JSON.stringify(rule)}, definedRule: ${JSON.stringify(definedRule)}, t: ${t}`);
+            logger.info(`ip: ${ip} violation of rule: ${stringifyRule(rule)}, definedRule: ${stringifyDefinedRule(definedRule)}, t: ${t}`);
           }
         } else {
           // 重新计数
@@ -135,7 +176,7 @@ module.exports = (options, app) => {
       });
 
       // 更新本次数据
-      const value = JSON.stringify(rules);
+      const value = stringify(rules);
       redis.set(cacheKey, value, 'EX', cacheExpire);
       // logger.debug(`update record, key: ${cacheKey}, value: ${value}`);
 
@@ -154,7 +195,7 @@ module.exports = (options, app) => {
       });
     });
 
-    const value = JSON.stringify(initRules);
+    const value = stringify(initRules);
 
     redis.set(cacheKey, value, 'EX', cacheExpire);
 
@@ -172,7 +213,6 @@ module.exports = (options, app) => {
         } else {
           ctx.status = ipCode;
           ctx.body = ipMessage;
-          logger.info(`ip limit, status: ${ipCode}, body: ${JSON.stringify(ipMessage)}`);
         }
         return;
       }
