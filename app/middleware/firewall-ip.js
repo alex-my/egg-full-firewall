@@ -4,6 +4,10 @@ const _ = require('lodash');
 const fastJson = require('fast-json-stringify');
 const Logger = require('../../lib/logger');
 
+// 未使用 redis 的哈希表，而是直接使用了字符串
+// 因为每次请求都需要修改所有的数据(count)
+// 尚未测试JSON解析/压缩 与 await HGETALL 相比效率如何
+
 module.exports = (options, app) => {
   const {
     logEnable,
